@@ -1,0 +1,60 @@
+# This workflow defines a GitHub Actions pipeline for building, testing, and publishing 
+# a .NET solution named 'DevHabit.sln'.
+
+name: Build
+
+on:
+  # Allows triggering the workflow manually from the GitHub UI
+  workflow_dispatch:
+  # Triggers the workflow when a push event occurs on the 'main' branch
+  push:
+    branches:
+      - main
+
+# Define environment variables available to all jobs in the workflow
+env:
+  # Specifies the target .NET version
+  DOTNET_VERSION: "9.x"
+
+jobs:
+  # The main build job
+  build:
+    # Specifies the runner environment
+    runs-on: ubuntu-latest
+    
+    # Define default settings for steps within this job
+    defaults:
+      run:
+        # Sets the default working directory for all 'run' steps
+        working-directory: DevHabit
+
+    steps:
+      # Step 1: Checkout the code from the repository
+      - uses: actions/checkout@v4
+      
+      # Step 2: Set up the .NET environment
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          # Uses the DOTNET_VERSION environment variable set above
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          
+      # Step 3: Restore dependencies for the solution
+      - name: Restore
+        # Runs the restore command on the solution file
+        run: dotnet restore DevHabit.sln
+        
+      # Step 4: Build the solution in Release configuration
+      - name: Build
+        # Builds the solution, ensuring no restore is run here since it was done in the previous step
+        run: dotnet build DevHabit.sln --configuration Release --no-restore
+        
+      # Step 5: Run tests for the solution
+      - name: Test
+        # Runs tests, ensuring no restore or build is run here
+        run: dotnet test DevHabit.sln --configuration Release --no-restore --no-build
+        
+      # Step 6: Publish the application
+      - name: Publish
+        # Publishes the application for deployment
+        run: dotnet publish DevHabit.sln --configuration Release --no-restore --no-build

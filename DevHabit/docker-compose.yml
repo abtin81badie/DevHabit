@@ -1,0 +1,73 @@
+services:
+  # ----------------------------------------------------
+  # DevHabit API Service
+  # ----------------------------------------------------
+  devhabit.api:
+    # Uses a dynamic image name based on an environment variable (DOCKER_REGISTRY)
+    image: ${DOCKER_REGISTRY-}devhabitapi
+    
+    # Configuration for building the image if it's not found in the registry
+    build:
+      context: .
+      # Specifies the path to the Dockerfile within the context
+      dockerfile: DevHabit.Api/Dockerfile
+      
+    # Map host ports to container ports (HOST_PORT:CONTAINER_PORT)
+    ports:
+      # Maps host port 5000 to container port 8080 (Commonly used for HTTP)
+      - "5000:8080"
+      # Maps host port 5001 to container port 8081 (Commonly used for HTTPS)
+      - "5001:8081"
+    
+    # Environment variables for OpenTelemetry (OTEL) configuration
+    environment:
+      # Seq Endpoint: directs OpenTelemetry data to the devhabit.seq service
+      # - OTEL_EXPORTER_OTLP_ENDPOINT=http://devhabit.seq:5341/ingest/otlp
+      # Protocol: specifies using the protobuf encoding over HTTP for OTLP
+      # - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+
+      # Aspire Dashboard Endpoint: directs OpenTelemetry data to the Aspire dashboard service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://devhabit.aspire-dashboard:18889
+      # Protocol: specifies using the gRPC protocol for OTLP
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+
+  # ----------------------------------------------------
+  # DevHabit SEQ Logging Server Service
+  # ----------------------------------------------------
+  devhabit.seq:
+    # Uses the datalust/seq image for log aggregation
+    image: datalust/seq:2024.3 # or latest
+    
+    # Environment variables required by SEQ
+    environment:
+      # Accepts the End-User License Agreement
+      ACCEPT_EULA: "Y"
+      
+    # Persist log data outside the container
+    volumes:
+      # Maps local directory for persistent data
+      - ./containers/seq_data:/data
+      
+    # Map host ports to container ports
+    ports:
+      # Maps host port 8080 to container port 80 (For web UI access)
+      - "8080:80"
+      # Maps host port 5341 to container port 5341 (For Serilog/API ingestion)
+      - "5341:5341"
+      
+  # ----------------------------------------------------
+  # DevHabit Aspire Dashboard Service
+  # ----------------------------------------------------
+  devhabit.aspire-dashboard:
+    # Uses the Microsoft Aspire dashboard image
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.0
+    
+    # Environment variables for configuration
+    environment:
+      # Allows anonymous access to the dashboard (unsecured)
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
+      
+    # Map host ports to container ports
+    ports:
+      # Maps host port 18888 to container port 18888 (For dashboard UI access)
+      - "18888:18888"
