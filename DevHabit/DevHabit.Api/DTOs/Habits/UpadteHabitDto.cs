@@ -1,8 +1,7 @@
 ﻿using DevHabit.Api.Entities;
 
 namespace DevHabit.Api.DTOs.Habits;
-
-public sealed record CreateHabitDto
+public sealed record UpdateHabitDto
 {
     public string Name { get; init; } = string.Empty;
     public string? Description { get; init; }
@@ -10,5 +9,11 @@ public sealed record CreateHabitDto
     public required FrequencyDto Frequency { get; init; }
     public required TargetDto Target { get; init; }
     public DateOnly? EndDate { get; init; }
-    public MilestoneDto? Milestone { get; init; }
+    public UpdateMilestoneDto? Milestone { get; init; }
+}
+
+
+public sealed record UpdateMilestoneDto
+{
+    public required int Target { get; init; }
 }
