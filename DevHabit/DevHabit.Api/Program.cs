@@ -11,7 +11,12 @@ using OpenTelemetry.Trace;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.ReturnHttpNotAcceptable = true;
+}
+)
+.AddXmlSerializerFormatters();
 
 builder.Services.AddOpenApi();
 
@@ -28,7 +33,7 @@ builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource.AddService(builder.Environment.ApplicationName))
     .WithTracing(tracing => tracing
         .AddHttpClientInstrumentation()
-        .AddAspNetCoreInstrumentation() 
+        .AddAspNetCoreInstrumentation()
         .AddNpgsql())
     .WithMetrics(metrics => metrics
         .AddHttpClientInstrumentation()
