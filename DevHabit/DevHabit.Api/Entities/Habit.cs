@@ -15,6 +15,8 @@ public class Habit
     public DateTime? CreatedAtUtc { get; set; }
     public DateTime? UpdatedAtUtc { get; set; }
     public DateTime? LastCompleteAtUtc { get; set; }
+    public  List<HabitTag>? HabitTags { get; init; }
+    public  List<Tag>? Tags { get; init; }
 }
 
 public enum HabitType
