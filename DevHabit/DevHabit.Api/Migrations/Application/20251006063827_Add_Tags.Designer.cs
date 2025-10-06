@@ -3,6 +3,7 @@ using System;
 using DevHabit.Api.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DevHabit.Api.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251006063827_Add_Tags")]
+    partial class Add_Tags
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -78,8 +81,7 @@ namespace DevHabit.Api.Migrations.Application
             modelBuilder.Entity("DevHabit.Api.Entities.Tag", b =>
                 {
                     b.Property<string>("Id")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
+                        .HasColumnType("text")
                         .HasColumnName("id");
 
                     b.Property<DateTime?>("CreatedAtUtc")
@@ -87,14 +89,12 @@ namespace DevHabit.Api.Migrations.Application
                         .HasColumnName("created_at_utc");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
+                        .HasColumnType("text")
                         .HasColumnName("description");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("text")
                         .HasColumnName("name");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
@@ -103,10 +103,6 @@ namespace DevHabit.Api.Migrations.Application
 
                     b.HasKey("Id")
                         .HasName("pk_tags");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("ix_tags_name");
 
                     b.ToTable("tags", "dev_habit");
                 });
