@@ -21,6 +21,14 @@ public sealed class HabitsController(ApplicationDbContext dbContext) : Controlle
     [FromQuery] HabitsQueryParameters query,
     SortMappingProvider sortMappingProvider)
     {
+        if (!sortMappingProvider.ValidateMappings<HabitDto, Habit>(query.Sort))
+        {
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                detail: $"The provided sort parameter isn't valid: '{query.Sort}'"
+                );
+        }
+
         query.Search ??= query.Search?.Trim().ToLower();
 
         var sortMappings = sortMappingProvider.GetMappings<HabitDto, Habit>();
