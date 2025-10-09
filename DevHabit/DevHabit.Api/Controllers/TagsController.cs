@@ -22,7 +22,7 @@ public sealed class TagsController(ApplicationDbContext dbContext) : ControllerB
 
         var habitsCollections = new TagsCollectionDto
         {
-            Data = tags
+            Items = tags
         };
 
         return Ok(habitsCollections);
