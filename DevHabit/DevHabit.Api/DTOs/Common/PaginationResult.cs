@@ -2,12 +2,15 @@
 
 namespace DevHabit.Api.DTOs.Common;
 
-public sealed record PaginationResult<T> : ICollectionResponse<T>
+public sealed record PaginationResult<T> : ICollectionResponse<T>, ILinkResponse
 {
     public List<T>? Items { get; init; }
     public int Page { get; init; }
     public int PageSize { get; init; }
     public int TotalCount { get; init; }
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+    public List<LinkDto> Links { get; set; }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     public int TotalPages => (int)Math.Ceiling(TotalCount / (double)PageSize);
     public bool HashPreviousPage => Page > 1;
     public bool HashNextPage => Page < TotalPages;

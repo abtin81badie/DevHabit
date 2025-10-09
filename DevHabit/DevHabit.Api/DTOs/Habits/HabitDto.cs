@@ -1,4 +1,5 @@
-﻿using DevHabit.Api.Entities;
+﻿using DevHabit.Api.DTOs.Common;
+using DevHabit.Api.Entities;
 using Newtonsoft.Json;
 
 namespace DevHabit.Api.DTOs.Habits;
@@ -24,6 +25,9 @@ public record HabitDto
     public DateTime? CreatedAtUtc { get; init; }
     public DateTime? UpdatedAtUtc { get; init; }
     public DateTime? LastCompleteAtUtc { get; init; }
+#pragma warning disable CA2227 // Collection properties should be read only
+    public List<LinkDto>? Links { get; set; }
+#pragma warning restore CA2227 // Collection properties should be read only
 }
 
 public sealed record FrequencyDto

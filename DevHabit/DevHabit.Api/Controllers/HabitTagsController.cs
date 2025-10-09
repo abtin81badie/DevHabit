@@ -10,6 +10,11 @@ namespace DevHabit.Api.Controllers;
 [Route("habits/{habitId}/tags")]
 public sealed class HabitTagsController(ApplicationDbContext dbContext): ControllerBase
 {
+#pragma warning disable CA1307 // Specify StringComparison for clarity
+    public static readonly string Name = nameof(HabitsController).Replace("Controller", string.Empty);
+#pragma warning restore CA1307 // Specify StringComparison for clarity
+
+
     [HttpPut]
     public async Task<ActionResult> UpsertHabitTags(string habitId, UpsertHabitsTagsDto upsertHabitsTagsDto)
     {
