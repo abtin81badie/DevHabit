@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace DevHabit.Api.Migrations.Application
 {
-    [DbContext(typeof(ApplicationDbContext))]
+    [DbContext(typeof(ApplicationIdentityDbContext))]
     [Migration("20251006114602_Change_HabitTags_CreationTime")]
     partial class Change_HabitTags_CreationTime
     {

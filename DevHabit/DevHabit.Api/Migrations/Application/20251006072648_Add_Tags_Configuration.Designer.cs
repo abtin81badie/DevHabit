@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace DevHabit.Api.Migrations.Application
 {
-    [DbContext(typeof(ApplicationDbContext))]
+    [DbContext(typeof(ApplicationIdentityDbContext))]
     [Migration("20251006072648_Add_Tags_Configuration")]
     partial class Add_Tags_Configuration
     {
