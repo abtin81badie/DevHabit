@@ -2,6 +2,7 @@
 using DevHabit.Api.DTOs.Auth;
 using DevHabit.Api.DTOs.Users;
 using DevHabit.Api.Entities;
+using DevHabit.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +17,8 @@ namespace DevHabit.Api.Controllers;
 public sealed class AuthController(
     UserManager<IdentityUser> userManager,
     ApplicationIdentityDbContext identityDbContext,
-    ApplicationDbContext applicationDbContext) : ControllerBase
+    ApplicationDbContext applicationDbContext,
+    TokenProvider tokenProvider) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterUserDto registerUserDto)
@@ -57,6 +59,27 @@ public sealed class AuthController(
 
         await transation.CommitAsync();
 
-        return Ok(user.Id);
+        TokenRequestDto tokenRequest = new(identityUser.Id, identityUser.Email);
+        AccessTokensDto accessTokens = tokenProvider.Create(tokenRequest);
+
+        return Ok(accessTokens);
+    }
+
+    [HttpPost("login")]
+    public async Task<ActionResult<AccessTokensDto>> Login(LoginUserDto loginUserDto)
+    {
+        var identityUser = await userManager.FindByEmailAsync(loginUserDto.Email);
+
+        if (identityUser is null || !await userManager.CheckPasswordAsync(identityUser, loginUserDto.Password))
+        {
+            return Unauthorized();
+        }
+
+#pragma warning disable CS8604 // Possible null reference argument.
+        var tokenRequest = new TokenRequestDto(identityUser.Id, identityUser.Email);
+#pragma warning restore CS8604 // Possible null reference argument.
+        AccessTokensDto accessTokens = tokenProvider.Create(tokenRequest);
+
+        return Ok(accessTokens);
     }
 }
