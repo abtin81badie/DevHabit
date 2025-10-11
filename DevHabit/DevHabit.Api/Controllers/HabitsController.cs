@@ -1,5 +1,6 @@
 ﻿using System.Dynamic;
 using System.Linq.Dynamic.Core;
+using Asp.Versioning;
 using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Common;
 using DevHabit.Api.DTOs.Habits;
@@ -14,7 +15,8 @@ using Microsoft.EntityFrameworkCore;
 namespace DevHabit.Api.Controllers;
 
 [ApiController]
-[Route("habits")]
+[Route("/habits")]
+[ApiVersion(1.0)]
 public sealed class HabitsController(ApplicationDbContext dbContext, LinkService linkService) : ControllerBase
 {
     [HttpGet]
@@ -86,6 +88,7 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
     }
 
     [HttpGet("{id}")]
+    [MapToApiVersion(1.0)]
     public async Task<IActionResult> GetHabitById(
         string id,
         string? fields,
@@ -124,6 +127,48 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
 
         return Ok(shapedHabitDto);
     }
+
+    [HttpGet("{id}")]
+    [ApiVersion(2.0)]
+    public async Task<IActionResult> GetHabitByIdV2(
+        string id,
+        string? fields,
+        [FromHeader(Name = "Accept")]
+        string? accept,
+        DataShapingService dataShapingService)
+    {
+        if (!dataShapingService.Validate<HabitWithTagsDtoV2>(fields))
+        {
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                detail: $"The provided fields aren't valid"
+                );
+        }
+
+        HabitWithTagsDtoV2? habit = await dbContext
+            .Habits
+            .Where(h => h.Id == id)
+            .Select(HabitQueries.ProjectToHabitWithTagsDtoV2())
+            .FirstOrDefaultAsync();
+
+        if (habit is null)
+        {
+            return NotFound();
+        }
+
+        ExpandoObject shapedHabitDto = dataShapingService.ShapeData(habit, fields);
+
+        if (accept == CustomMediaTypeNames.ApplicationMediaTypes.HateoasJson)
+        {
+            List<LinkDto> links = CreateLinksForHabit(id, fields);
+
+            shapedHabitDto.TryAdd("links", links);
+        }
+
+
+        return Ok(shapedHabitDto);
+    }
+
 
     [HttpPost]
     public async Task<ActionResult<HabitDto>> CreateHabit(

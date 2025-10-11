@@ -3,7 +3,7 @@ using DevHabit.Api.Entities;
 
 namespace DevHabit.Api.DTOs.Habits;
 
-public record HabitDto
+public sealed record HabitWithTagsDtoV2
 {
     public required string Id { get; init; }
     public required string Name { get; init; }
@@ -15,28 +15,11 @@ public record HabitDto
     public required bool IsArchived { get; init; }
     public DateOnly? EndDate { get; init; }
     public MilestoneDto? Milestone { get; init; }
-    public DateTime? CreatedAtUtc { get; init; }
-    public DateTime? UpdatedAtUtc { get; init; }
-    public DateTime? LastCompleteAtUtc { get; init; }
+    public DateTime? CreatedAt { get; init; }
+    public DateTime? UpdatedAt { get; init; }
+    public DateTime? LastCompletedAt { get; init; }
 #pragma warning disable CA2227 // Collection properties should be read only
     public List<LinkDto>? Links { get; set; }
 #pragma warning restore CA2227 // Collection properties should be read only
-}
-
-public sealed record FrequencyDto
-{
-    public required FrequencyType Type { get; init; }
-    public required int TimesPerPeriod { get; init; }
-}
-
-public sealed record TargetDto
-{
-    public required int Value { get; init; }
-    public required string Unit { get; init; }
-}
-
-public sealed record MilestoneDto
-{
-    public required int Target { get; init; }
-    public required int Current { get; init; }
+    public required IReadOnlyList<string> Tags { get; init; }
 }

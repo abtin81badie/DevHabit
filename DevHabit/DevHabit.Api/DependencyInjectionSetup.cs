@@ -1,4 +1,5 @@
-﻿using DevHabit.Api.Database;
+﻿using Asp.Versioning;
+using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Habits;
 using DevHabit.Api.Entities;
 using DevHabit.Api.Middleware;
@@ -20,7 +21,7 @@ namespace DevHabit.Api;
 
 public static class DependencyInjectionSetup
 {
-    public static WebApplicationBuilder AddControllers(this WebApplicationBuilder builder)
+    public static WebApplicationBuilder AddApiServices(this WebApplicationBuilder builder)
     {
 
         builder.Services.AddControllers(options =>
@@ -37,8 +38,31 @@ public static class DependencyInjectionSetup
                 .OfType<NewtonsoftJsonOutputFormatter>()
                 .First();
 
+            formatter.SupportedMediaTypes.Add(CustomMediaTypeNames.ApplicationMediaTypes.JsonV1);
+            formatter.SupportedMediaTypes.Add(CustomMediaTypeNames.ApplicationMediaTypes.JsonV2);
             formatter.SupportedMediaTypes.Add(CustomMediaTypeNames.ApplicationMediaTypes.HateoasJson);
+            formatter.SupportedMediaTypes.Add(CustomMediaTypeNames.ApplicationMediaTypes.HateoasJsonV1);
+            formatter.SupportedMediaTypes.Add(CustomMediaTypeNames.ApplicationMediaTypes.HateoasJsonV2);
         });
+
+        builder.Services
+            .AddApiVersioning(options =>
+            {
+                options.DefaultApiVersion = new Asp.Versioning.ApiVersion(1.0);
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.ReportApiVersions = true;
+                options.ApiVersionSelector = new DefaultApiVersionSelector(options);
+
+                //options.ApiVersionReader = new UrlSegmentApiVersionReader();
+                options.ApiVersionReader = ApiVersionReader.Combine(
+                        new MediaTypeApiVersionReader(),
+                        new MediaTypeApiVersionReaderBuilder()
+                            .Template("application/vnd.dev-habit.hateoas.{version}+json")
+                            .Build()
+                    );
+            }
+            )
+            .AddMvc();
 
         builder.Services.AddOpenApi();
 
