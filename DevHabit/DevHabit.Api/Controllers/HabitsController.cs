@@ -1,5 +1,6 @@
 ﻿using System.Dynamic;
 using System.Linq.Dynamic.Core;
+using System.Net.Mime;
 using Asp.Versioning;
 using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Common;
@@ -17,6 +18,14 @@ namespace DevHabit.Api.Controllers;
 [ApiController]
 [Route("/habits")]
 [ApiVersion(1.0)]
+[Produces(
+    MediaTypeNames.Application.Json,
+    CustomMediaTypeNames.ApplicationMediaTypes.JsonV1,
+    CustomMediaTypeNames.ApplicationMediaTypes.JsonV2,
+    CustomMediaTypeNames.ApplicationMediaTypes.HateoasJson,
+    CustomMediaTypeNames.ApplicationMediaTypes.HateoasJsonV1,
+    CustomMediaTypeNames.ApplicationMediaTypes.HateoasJsonV2
+    )]
 public sealed class HabitsController(ApplicationDbContext dbContext, LinkService linkService) : ControllerBase
 {
     [HttpGet]
