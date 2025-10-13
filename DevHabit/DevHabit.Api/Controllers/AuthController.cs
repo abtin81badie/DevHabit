@@ -3,11 +3,13 @@ using DevHabit.Api.DTOs.Auth;
 using DevHabit.Api.DTOs.Users;
 using DevHabit.Api.Entities;
 using DevHabit.Api.Services;
+using DevHabit.Api.Settings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Options;
 
 namespace DevHabit.Api.Controllers;
 
@@ -18,8 +20,11 @@ public sealed class AuthController(
     UserManager<IdentityUser> userManager,
     ApplicationIdentityDbContext identityDbContext,
     ApplicationDbContext applicationDbContext,
-    TokenProvider tokenProvider) : ControllerBase
+    TokenProvider tokenProvider,
+    IOptions<JwtAuthOptions> options) : ControllerBase
 {
+    private readonly JwtAuthOptions _jwtAuthOptions = options.Value;
+
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterUserDto registerUserDto)
     {
@@ -40,8 +45,8 @@ public sealed class AuthController(
             Dictionary<string, object?> extensions = new() {
                 {
                     "errors", identityResult.Errors.ToDictionary(
-                            e => e.Code,
-                            e => e.Description)
+                        e => e.Code,
+                        e => e.Description)
                 }
             };
             return Problem(
@@ -52,15 +57,26 @@ public sealed class AuthController(
         }
 
         User user = registerUserDto.ToEntity(identityUser.Id);
-
         applicationDbContext.Users.Add(user);
-
         await applicationDbContext.SaveChangesAsync();
-
-        await transation.CommitAsync();
 
         TokenRequestDto tokenRequest = new(identityUser.Id, identityUser.Email);
         AccessTokensDto accessTokens = tokenProvider.Create(tokenRequest);
+
+        var refreshToken = new RefreshToken
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = identityUser.Id,
+            Token = accessTokens.RefreshToken,
+            ExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays)
+        };
+
+        identityDbContext.RefreshTokens.Add(refreshToken);
+
+        // FIX: Persist the new refresh token to the database before committing.
+        await identityDbContext.SaveChangesAsync();
+
+        await transation.CommitAsync();
 
         return Ok(accessTokens);
     }
@@ -79,6 +95,47 @@ public sealed class AuthController(
         var tokenRequest = new TokenRequestDto(identityUser.Id, identityUser.Email);
 #pragma warning restore CS8604 // Possible null reference argument.
         AccessTokensDto accessTokens = tokenProvider.Create(tokenRequest);
+
+        var refreshToken = new RefreshToken
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = identityUser.Id,
+            Token = accessTokens.RefreshToken,
+            ExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays)
+        };
+
+        identityDbContext.RefreshTokens.Add(refreshToken);
+
+        // FIX: Persist the new refresh token to the database.
+        await identityDbContext.SaveChangesAsync();
+
+        return Ok(accessTokens);
+    }
+
+    [HttpPost("refresh")]
+    public async Task<ActionResult<AccessTokensDto>> Refresh(RefreshTokenDto refreshTokenDto)
+    {
+        RefreshToken? refreshToken = await identityDbContext.RefreshTokens
+            .Include(rt => rt.User)
+            .FirstOrDefaultAsync(rt => rt.Token == refreshTokenDto.RefreshToken);
+
+        if (refreshToken == null)
+            return Unauthorized();
+
+        if (refreshToken.ExpiresAtUtc < DateTime.UtcNow)
+            return Unauthorized();
+
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+#pragma warning disable CS8604 // Possible null reference argument.
+        TokenRequestDto tokenRequest = new(refreshToken.User.Id, refreshToken.User.Email);
+#pragma warning restore CS8604 // Possible null reference argument.
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+        AccessTokensDto accessTokens = tokenProvider.Create(tokenRequest);
+
+        refreshToken.Token = accessTokens.RefreshToken;
+        refreshToken.ExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays);
+
+        await identityDbContext.SaveChangesAsync();
 
         return Ok(accessTokens);
     }
