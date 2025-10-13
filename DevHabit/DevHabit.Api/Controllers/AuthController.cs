@@ -38,13 +38,31 @@ public sealed class AuthController(
             UserName = registerUserDto.Email
         };
 
-        IdentityResult identityResult = await userManager.CreateAsync(identityUser, registerUserDto.Password);
+        IdentityResult createUserResult = await userManager.CreateAsync(identityUser, registerUserDto.Password);
 
-        if (!identityResult.Succeeded)
+        if (!createUserResult.Succeeded)
         {
             Dictionary<string, object?> extensions = new() {
                 {
-                    "errors", identityResult.Errors.ToDictionary(
+                    "errors", createUserResult.Errors.ToDictionary(
+                        e => e.Code,
+                        e => e.Description)
+                }
+            };
+            return Problem(
+                    detail: "Unable to register user, please try again.",
+                    statusCode: StatusCodes.Status400BadRequest,
+                    extensions: extensions
+                );
+        }
+
+        IdentityResult addToRoleResult = await userManager.AddToRoleAsync(identityUser, Roles.Member);
+
+        if (!addToRoleResult.Succeeded)
+        {
+            Dictionary<string, object?> extensions = new() {
+                {
+                    "errors", addToRoleResult.Errors.ToDictionary(
                         e => e.Code,
                         e => e.Description)
                 }
@@ -60,7 +78,7 @@ public sealed class AuthController(
         applicationDbContext.Users.Add(user);
         await applicationDbContext.SaveChangesAsync();
 
-        TokenRequestDto tokenRequest = new(identityUser.Id, identityUser.Email);
+        TokenRequestDto tokenRequest = new(identityUser.Id, identityUser.Email, [Roles.Member]);
         AccessTokensDto accessTokens = tokenProvider.Create(tokenRequest);
 
         var refreshToken = new RefreshToken
@@ -91,8 +109,10 @@ public sealed class AuthController(
             return Unauthorized();
         }
 
+        IList<string> roles = await userManager.GetRolesAsync(identityUser);
+
 #pragma warning disable CS8604 // Possible null reference argument.
-        var tokenRequest = new TokenRequestDto(identityUser.Id, identityUser.Email);
+        var tokenRequest = new TokenRequestDto(identityUser.Id, identityUser.Email, roles);
 #pragma warning restore CS8604 // Possible null reference argument.
         AccessTokensDto accessTokens = tokenProvider.Create(tokenRequest);
 
@@ -125,9 +145,13 @@ public sealed class AuthController(
         if (refreshToken.ExpiresAtUtc < DateTime.UtcNow)
             return Unauthorized();
 
+#pragma warning disable CS8604 // Possible null reference argument.
+        IList<string> roles = await userManager.GetRolesAsync(refreshToken.User);
+#pragma warning restore CS8604 // Possible null reference argument.
+
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8604 // Possible null reference argument.
-        TokenRequestDto tokenRequest = new(refreshToken.User.Id, refreshToken.User.Email);
+        TokenRequestDto tokenRequest = new(refreshToken.User.Id, refreshToken.User.Email, roles);
 #pragma warning restore CS8604 // Possible null reference argument.
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
         AccessTokensDto accessTokens = tokenProvider.Create(tokenRequest);

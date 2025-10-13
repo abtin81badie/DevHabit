@@ -16,7 +16,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DevHabit.Api.Controllers;
 
-[Authorize]
+[Authorize(Roles = Roles.Member)]
 [ApiController]
 [Route("/habits")]
 [ApiVersion(1.0)]
@@ -89,7 +89,7 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
             Items = dataShapingService.ShapeCollectionData(
                 habits,
                 query.Fields,
-                includeLinks ? h => CreateLinksForHabit(h.Id, query.Fields): null),
+                includeLinks ? h => CreateLinksForHabit(h.Id, query.Fields) : null),
             Page = query.Page,
             PageSize = query.PageSize,
             TotalCount = totalCount
@@ -132,7 +132,7 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
 
         HabitWithTagsDto? habit = await dbContext
             .Habits
-            .Where(h => h.Id == id  && h.UserId == userId)
+            .Where(h => h.Id == id && h.UserId == userId)
             .Select(HabitQueries.ProjectToHabitWithTagsDto())
             .FirstOrDefaultAsync();
 
@@ -341,7 +341,7 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
 
         if (hasNextPage)
         {
-            links.Add( linkService.Create(nameof(GetHabits), "next-page", HttpMethods.Get, new
+            links.Add(linkService.Create(nameof(GetHabits), "next-page", HttpMethods.Get, new
             {
                 page = parameters.Page + 1,
                 pageSize = parameters.PageSize,
@@ -372,6 +372,8 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
 
     private List<LinkDto> CreateLinksForHabit(string id, string? fields)
     {
+        //User.IsInRole(Roles.Admin);
+
         List<LinkDto> links =
             [
                 linkService.Create(nameof(GetHabitById), "self", HttpMethods.Get, new{id, fields}),

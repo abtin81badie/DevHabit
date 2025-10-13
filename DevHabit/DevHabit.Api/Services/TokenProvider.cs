@@ -15,10 +15,10 @@ public sealed class TokenProvider(IOptions<JwtAuthOptions> options)
 
     public AccessTokensDto Create(TokenRequestDto tokenRequest)
     {
-        return new(GenerateToken(tokenRequest), GenerateRefreshToken());
+        return new(GenerateAccessToken(tokenRequest), GenerateRefreshToken());
     }
 
-    private string GenerateToken(TokenRequestDto tokenRequest)
+    private string GenerateAccessToken(TokenRequestDto tokenRequest)
     {
         SymmetricSecurityKey securityKey = new(Encoding.UTF8.GetBytes(_jwtAuthOptions.Key));
         SigningCredentials signingCredentials = new(securityKey, SecurityAlgorithms.HmacSha256);
@@ -26,7 +26,8 @@ public sealed class TokenProvider(IOptions<JwtAuthOptions> options)
         List<Claim> claims =
         [
             new(JwtRegisteredClaimNames.Sub, tokenRequest.UserId),
-            new(JwtRegisteredClaimNames.Email, tokenRequest.Email)
+            new(JwtRegisteredClaimNames.Email, tokenRequest.Email),
+            ..tokenRequest.Roles.Select(role => new Claim(ClaimTypes.Role, role))
         ];
 
         SecurityTokenDescriptor tokenDescriptor = new()
