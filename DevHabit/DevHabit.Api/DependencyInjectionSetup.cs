@@ -151,6 +151,8 @@ public static class DependencyInjectionSetup
         builder.Services.AddMemoryCache();
         builder.Services.AddScoped<UserContext>();
 
+        builder.Services.Configure<EncryptionOptions>(builder.Configuration.GetSection("Encryption"));
+
         return builder;
     }
 
